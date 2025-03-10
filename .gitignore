@@ -1,2 +1,3 @@
 /target
-test_api.py
+*.py
+.env
