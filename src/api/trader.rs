@@ -38,7 +38,7 @@ impl ToDiscordMessage for VoidTrader {
         match self.active {
             true => {
                 let end_date = crate::date::api_to_chrono(&self.expiry)
-                    .expect("Error, cannot map date in `VoidTrader::message`");
+                    .expect("[ERROR]: unable to map api date (1)");
                 let end_date = end_date.format("%B %d at %T");
 
                 let mut inventory_strings: Vec<_> = self
@@ -100,7 +100,7 @@ impl ToDiscordMessage for VoidTrader {
             }
             false => {
                 let begin_date = crate::date::api_to_chrono(&self.activation)
-                    .expect("Error, cannot map date in `VoidTrader::message`");
+                    .expect("[ERROR]: unable to map api date (2)");
                 let begin_date = begin_date.format("%B %d at %T");
 
                 format!(
@@ -120,7 +120,7 @@ pub async fn handle_baro() -> String {
            content
         },
         Err(why) => {
-            eprintln!("Error fetching trader info: {why:?}");
+            eprintln!("[ERROR]: could not fetch Trader info from api: {why:?}");
 
             let message = "Unable to get information on the void trader. \
             Please try again.";

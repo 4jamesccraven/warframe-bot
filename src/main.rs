@@ -33,7 +33,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let cache = Cache::default();
 
-
     let intents = GatewayIntents::default()
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
@@ -45,6 +44,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Ok(id) => {
             let channel_id = ChannelId::new(id.parse::<u64>().expect("Invalid Channel Id"));
             let http = Arc::clone(&client.http);
+
+            cache.update_news_from_channel(&client, &channel_id).await;
+
             tokio::spawn(news_loop(cache.clone(), http, channel_id));
         },
         Err(_) => {

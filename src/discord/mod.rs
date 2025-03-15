@@ -31,7 +31,7 @@ impl EventHandler for Handler {
 
         if let Some(response) = response {
             if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
-                println!("Error sending message: {why:?}");
+                println!("[ERROR]: could not send message: {why:?}");
             }
         }
     }
