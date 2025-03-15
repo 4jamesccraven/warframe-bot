@@ -80,8 +80,11 @@ impl ToDiscordMessage for VoidTrader {
 
                 let (item_max, cred_max, duc_max) = (maxes[0], maxes[1], maxes[2]);
 
-                let dividers: (String, String, String) =
-                    ("-".repeat(item_max), "-".repeat(cred_max), "-".repeat(duc_max));
+                let dividers: (String, String, String) = (
+                    "-".repeat(item_max),
+                    "-".repeat(cred_max),
+                    "-".repeat(duc_max),
+                );
 
                 inventory_strings.insert(1, dividers);
 
@@ -122,34 +125,32 @@ pub async fn handle_baro() -> String {
         Ok(trader) => {
             let content = trader.message();
 
-           content
-        },
+            content
+        }
         Err(why) => {
             eprintln!("[ERROR]: could not fetch Trader info from api: {why:?}");
 
             let message = "Unable to get information on the void trader. \
             Please try again.";
 
-           message.into()
-        },
+            message.into()
+        }
     }
 }
 
 pub async fn baro_loop(http: Arc<Http>, channel_id: ChannelId) {
     loop {
         match VoidTrader::get().await {
-            Ok(trader) => {
-                match trader.active {
-                    true => {
-                        if let Err(why) = channel_id.say(&http, trader.message()).await {
-                            eprintln!("[ERROR]: failed to post void trader inventory: {why:?}");
-                        }
-                        sleep(Duration::from_secs(172800)).await;
-                    },
-                    false => {
-                        eprintln!("[INFO]: Trader inactive.");
-                        sleep(Duration::from_secs(86400)).await;
+            Ok(trader) => match trader.active {
+                true => {
+                    if let Err(why) = channel_id.say(&http, trader.message()).await {
+                        eprintln!("[ERROR]: failed to post void trader inventory: {why:?}");
                     }
+                    sleep(Duration::from_secs(172800)).await;
+                }
+                false => {
+                    eprintln!("[INFO]: Trader inactive.");
+                    sleep(Duration::from_secs(86400)).await;
                 }
             },
             Err(why) => {

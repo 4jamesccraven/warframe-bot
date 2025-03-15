@@ -14,7 +14,9 @@ pub async fn clear_messages(ctx: &Context, channel_id: ChannelId) {
             eprintln!("[ERROR]: could not delete mesages: {why:?}");
         }
 
-        retriever = GetMessages::new().before(messages.last().unwrap().id).limit(100);
+        retriever = GetMessages::new()
+            .before(messages.last().unwrap().id)
+            .limit(100);
         messages = channel_id.messages(&ctx.http, retriever).await.unwrap();
     }
 }

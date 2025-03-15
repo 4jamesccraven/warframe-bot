@@ -2,8 +2,8 @@ mod api;
 mod date;
 mod discord;
 
+use api::{baro_loop, news_loop, Cache};
 use discord::Handler;
-use api::{Cache, news_loop, baro_loop};
 
 use std::boxed::Box;
 use std::env;
@@ -20,8 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                      Please ensure that the environment variable \
                      `TOKEN` is available or present in ./.env";
 
-    let token = env::var("TOKEN")
-        .expect(token_err);
+    let token = env::var("TOKEN").expect(token_err);
 
     let news_err = "Warning: `NEWS_CHANNEL_ID` not present in environment. \
                     News updates will not be sent.";
@@ -35,7 +34,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client = Client::builder(&token, intents)
-        .event_handler(Handler).await?;
+        .event_handler(Handler)
+        .await?;
 
     match news_channel_id {
         Ok(id) => {
@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             tokio::spawn(news_loop(cache.clone(), news_http, channel_id));
             tokio::spawn(baro_loop(baro_http, channel_id));
-        },
+        }
         Err(_) => {
             eprintln!("{}", news_err);
         }

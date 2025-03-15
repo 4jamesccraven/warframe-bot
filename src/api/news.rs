@@ -5,7 +5,7 @@ use crate::date::{api_to_chrono, within_5_days};
 use std::sync::Arc;
 
 use serenity::all::{ChannelId, Http};
-use tokio::time::{Duration, sleep};
+use tokio::time::{sleep, Duration};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]

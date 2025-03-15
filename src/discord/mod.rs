@@ -15,7 +15,7 @@ impl EventHandler for Handler {
             "!baro" => {
                 let message = handle_baro().await;
                 Some(message)
-            },
+            }
             // "!clear" => {
             //     if let Some(channel) = msg.channel_id.to_channel(&ctx.http).await.ok() {
             //         utils::clear_messages(&ctx, channel.id()).await;
@@ -30,11 +30,11 @@ impl EventHandler for Handler {
                                ```";
 
                 Some(message.into())
-            },
+            }
             response if response.starts_with("!") => {
                 let msg = "Unknown command";
                 Some(msg.into())
-            },
+            }
             _ => None,
         };
 

@@ -37,7 +37,7 @@ impl Cache {
                         Some((msg, item.id.clone()))
                     })
                     .collect();
-            },
+            }
             Err(why) => {
                 eprintln!("[ERROR]: could not get news items: {why:?}");
                 return;
