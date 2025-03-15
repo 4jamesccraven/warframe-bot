@@ -33,6 +33,8 @@
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
         };
+
+        packages.default = pkgs.callPackage ./package.nix { };
       }
     );
 }
