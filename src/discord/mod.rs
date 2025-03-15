@@ -16,11 +16,20 @@ impl EventHandler for Handler {
                 let message = handle_baro().await;
                 Some(message)
             },
-            "!clear" => {
-                if let Some(channel) = msg.channel_id.to_channel(&ctx.http).await.ok() {
-                    utils::clear_messages(&ctx, channel.id()).await;
-                }
-                None
+            // "!clear" => {
+            //     if let Some(channel) = msg.channel_id.to_channel(&ctx.http).await.ok() {
+            //         utils::clear_messages(&ctx, channel.id()).await;
+            //     }
+
+            //     None
+            // },
+            "!help" => {
+                let message = "```\n\
+                               !baro => check for the Void Trader's movements\n\
+                               !help => print this message and exit\n\
+                               ```";
+
+                Some(message.into())
             },
             response if response.starts_with("!") => {
                 let msg = "Unknown command";
