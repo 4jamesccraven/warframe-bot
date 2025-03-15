@@ -3,7 +3,7 @@ mod date;
 mod discord;
 
 use discord::Handler;
-use api::{Cache, news_loop};
+use api::{Cache, news_loop, baro_loop};
 
 use std::boxed::Box;
 use std::env;
@@ -43,11 +43,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     match news_channel_id {
         Ok(id) => {
             let channel_id = ChannelId::new(id.parse::<u64>().expect("Invalid Channel Id"));
-            let http = Arc::clone(&client.http);
+            let news_http = Arc::clone(&client.http);
+            let baro_http = Arc::clone(&client.http);
 
             cache.update_news_from_channel(&client, &channel_id).await;
 
-            tokio::spawn(news_loop(cache.clone(), http, channel_id));
+            tokio::spawn(news_loop(cache.clone(), news_http, channel_id));
+            tokio::spawn(baro_loop(baro_http, channel_id));
         },
         Err(_) => {
             eprintln!("{}", news_err);

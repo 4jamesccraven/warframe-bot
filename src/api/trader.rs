@@ -1,5 +1,10 @@
 use super::*;
 
+use std::sync::Arc;
+
+use serenity::all::Http;
+use tokio::time::{sleep, Duration};
+
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VoidTrader {
@@ -127,5 +132,30 @@ pub async fn handle_baro() -> String {
 
            message.into()
         },
+    }
+}
+
+pub async fn baro_loop(http: Arc<Http>, channel_id: ChannelId) {
+    loop {
+        match VoidTrader::get().await {
+            Ok(trader) => {
+                match trader.active {
+                    true => {
+                        if let Err(why) = channel_id.say(&http, trader.message()).await {
+                            eprintln!("[ERROR]: failed to post void trader inventory: {why:?}");
+                        }
+                        sleep(Duration::from_secs(172800)).await;
+                    },
+                    false => {
+                        eprintln!("[INFO]: Trader inactive.");
+                        sleep(Duration::from_secs(86400)).await;
+                    }
+                }
+            },
+            Err(why) => {
+                eprintln!("[ERROR]: unable to get void trader info from api.\n{why:?}\n Retrying in 1m...");
+                sleep(Duration::from_secs(60)).await;
+            }
+        }
     }
 }
