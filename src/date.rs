@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
 
 pub fn api_to_chrono(date: &str) -> Option<DateTime<Local>> {
     let naive = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S%.3fZ").ok()?;
@@ -8,6 +8,19 @@ pub fn api_to_chrono(date: &str) -> Option<DateTime<Local>> {
     let local = utc.with_timezone(&Local);
 
     Some(local)
+}
+
+pub fn within_24_hrs(date: &str) -> bool {
+    let naive = NaiveDateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S%.3fZ");
+    if let Err(why) = naive {
+        eprintln!("Error converting time: {why:?}");
+        return false;
+    }
+    let naive = naive.unwrap();
+    let utc: DateTime<Utc> = naive.and_utc();
+    let now = Utc::now();
+
+    now - utc <= Duration::days(1)
 }
 
 #[cfg(test)]

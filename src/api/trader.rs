@@ -1,60 +1,18 @@
-use crate::discord::ToDiscordMessage;
-
-use std::boxed::Box;
-use std::collections::HashMap;
-use std::error::Error;
-
-use reqwest as rq;
-use serde::{Deserialize, Serialize};
-use serde_json;
-
-#[allow(non_snake_case)]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NewsItem {
-    pub id: String,
-    pub message: String,
-    pub link: String,
-    pub imageLink: String,
-    pub priority: bool,
-    pub date: String,
-    pub eta: String,
-    pub update: bool,
-    pub primeAccess: bool,
-    pub stream: bool,
-    pub translations: HashMap<String, String>,
-    pub asString: String,
-}
-
-impl NewsItem {
-    pub async fn get_all() -> Result<Vec<Self>, Box<dyn Error>> {
-        let url = "https://api.warframestat.us/pc/news";
-        let response = rq::get(url).await?.text().await?;
-
-        let news: Vec<Self> = serde_json::from_str(&response)?;
-
-        Ok(news)
-    }
-}
-
-impl ToDiscordMessage for NewsItem {
-    fn message(&self) -> String {
-        self.asString.clone()
-    }
-}
+use super::*;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VoidTrader {
-    id: String,
-    activation: String,
-    expiry: String,
-    startString: String,
-    active: bool,
-    character: String,
-    location: String,
-    inventory: Vec<TradeItem>,
-    psId: String,
-    endString: String,
+    pub id: String,
+    pub activation: String,
+    pub expiry: String,
+    pub startString: String,
+    pub active: bool,
+    pub character: String,
+    pub location: String,
+    pub inventory: Vec<TradeItem>,
+    pub psId: String,
+    pub endString: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -65,7 +23,7 @@ pub struct TradeItem {
 }
 
 impl VoidTrader {
-    pub async fn get() -> Result<Self, Box<dyn Error>> {
+    pub async fn get() -> Result<Self, Error> {
         let url = "https://api.warframestat.us/pc/voidTrader";
         let response = rq::get(url).await?.text().await?;
 
@@ -83,7 +41,7 @@ impl ToDiscordMessage for VoidTrader {
                     .expect("Error, cannot map date in `VoidTrader::message`");
                 let end_date = end_date.format("%B %d at %T");
 
-                let inventory_strings: Vec<_> = self
+                let mut inventory_strings: Vec<_> = self
                     .inventory
                     .iter()
                     .map(|i| {
@@ -94,6 +52,11 @@ impl ToDiscordMessage for VoidTrader {
                         )
                     })
                     .collect();
+
+                let header: (String, String, String) =
+                    ("Item".into(), "Credits".into(), "Ducats".into());
+
+                inventory_strings.insert(0, header);
 
                 let maxes: Vec<_> = (0..3)
                     .map(|i| {
@@ -112,21 +75,26 @@ impl ToDiscordMessage for VoidTrader {
 
                 let (item_max, cred_max, duc_max) = (maxes[0], maxes[1], maxes[2]);
 
+                let dividers: (String, String, String) =
+                    ("-".repeat(item_max), "-".repeat(cred_max), "-".repeat(duc_max));
+
+                inventory_strings.insert(1, dividers);
+
                 let inventory = inventory_strings
                     .iter()
                     .map(|(item, credit, ducat)| {
                         format!(
-                            "{item:imax$}  {credit:cmax$}  {ducat:dmax$}",
-                            imax = item_max,
-                            cmax = cred_max,
-                            dmax = duc_max
+                            "{item:item_max$}  {credit:>cred_max$}  {ducat:>duc_max$}",
+                            item_max = item_max,
+                            cred_max = cred_max,
+                            duc_max = duc_max
                         )
                     })
                     .collect::<Vec<String>>()
                     .join("\n");
 
                 format!(
-                    "{} is in {} until {}:\n{}",
+                    "{} is in {} until {}:```\n{}```",
                     self.character, self.location, end_date, inventory
                 )
             }
@@ -141,5 +109,23 @@ impl ToDiscordMessage for VoidTrader {
                 )
             }
         }
+    }
+}
+
+pub async fn handle_baro() -> String {
+    match VoidTrader::get().await {
+        Ok(trader) => {
+            let content = trader.message();
+
+           content
+        },
+        Err(why) => {
+            eprintln!("Error fetching trader info: {why:?}");
+
+            let message = "Unable to get information on the void trader. \
+            Please try again.";
+
+           message.into()
+        },
     }
 }

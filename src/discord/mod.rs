@@ -1,8 +1,9 @@
-use crate::api::{VoidTrader, NewsItem};
+mod utils;
+
+use crate::api::handle_baro;
 
 use serenity::async_trait;
 use serenity::model::channel::Message;
-// use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 
 pub struct Handler;
@@ -12,25 +13,20 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         let response: Option<String> = match msg.content.as_str() {
             "!baro" => {
-                if let Ok(trader) = VoidTrader::get().await {
-                    let content = trader.message();
-
-                    Some(content)
-                } else {
-                    let msg = "Unable to get information on the void trader. \
-                    Please try again";
-
-                    Some(msg.into())
+                let message = handle_baro().await;
+                Some(message)
+            },
+            "!clear" => {
+                if let Some(channel) = msg.channel_id.to_channel(&ctx.http).await.ok() {
+                    utils::clear_messages(&ctx, channel.id()).await;
                 }
+                None
             },
             response if response.starts_with("!") => {
                 let msg = "Unknown command";
-
                 Some(msg.into())
             },
-            _ => {
-                None
-            },
+            _ => None,
         };
 
         if let Some(response) = response {
