@@ -10,15 +10,12 @@ use std::env;
 use std::error::Error;
 use std::sync::Arc;
 
-use dotenv::dotenv;
 use serenity::all::ChannelId;
 use serenity::prelude::*;
 use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let _ = dotenv()?;
-
     let token_err = "Unable to get discord application token. \
                      Please ensure that the environment variable \
                      `TOKEN` is available or present in ./.env";
