@@ -15,5 +15,9 @@ rustPlatform.buildRustPackage {
   src = ./.;
 
   cargoLock.lockFile = ./Cargo.lock;
+
+  meta = {
+    license = lib.licenses.gpl3;
+  };
 }
 
