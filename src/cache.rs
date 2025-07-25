@@ -1,12 +1,22 @@
 use std::collections::{HashSet, VecDeque};
+use std::fs::{self, File};
 use std::hash::Hash;
+use std::io::BufWriter;
+use std::path::PathBuf;
 
+use anyhow::{anyhow, Result};
+use bincode::serde::{decode_from_std_read, encode_into_std_write};
+use dirs::cache_dir;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+
+pub trait Cacheable: Eq + Hash + Clone {}
+impl<T: Eq + Hash + Clone> Cacheable for T {}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SeenCache<T, const CACHE_SIZE: usize>
 where
-    T: Eq + Hash + Clone,
+    T: Cacheable,
 {
     queue: VecDeque<T>,
     #[serde(skip)]
@@ -17,10 +27,6 @@ impl<T, const CACHE_SIZE: usize> SeenCache<T, CACHE_SIZE>
 where
     T: Eq + Hash + Clone,
 {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     /// Adds a value to the cache, dropping the oldest value when exceeding the cache size.
     ///
     /// Returns whether the value was newly inserted. That is:
@@ -30,7 +36,7 @@ where
     ///   and the set is not modified: original value is not replaced,
     ///   and the value passed as argument is dropped.
     pub fn insert(&mut self, value: T) -> bool {
-        if self.set.contains(&value) {
+        if self.contains(&value) {
             return false;
         }
 
@@ -44,6 +50,7 @@ where
         true
     }
 
+    #[allow(unused)]
     /// Returns the length of the cache
     pub fn len(&self) -> usize {
         self.queue.len()
@@ -67,6 +74,49 @@ where
     }
 }
 
+impl<T, const N: usize> SeenCache<T, N>
+where
+    T: Cacheable + DeserializeOwned + Serialize,
+{
+    /// Load the cache from its default location, or provide an empty one.
+    pub fn new() -> Self {
+        Self::from_cache().unwrap_or(Self::default())
+    }
+
+    /// Get the path to the cache directory.
+    fn cache_path() -> Option<PathBuf> {
+        let path = cache_dir()?.join("warframe_bot");
+        fs::create_dir_all(&path).ok()?;
+
+        Some(path.join("cache.bin"))
+    }
+
+    /// Attempt to load a binary dump of the cache from the default location.
+    fn from_cache() -> Option<Self> {
+        let cache = Self::cache_path()?;
+        let mut file_handle = File::open(cache).ok()?;
+
+        let cfg = bincode::config::standard();
+        let cache: Self = decode_from_std_read(&mut file_handle, cfg).ok()?;
+
+        Some(cache)
+    }
+
+    /// Dump the cache to the default location.
+    /// TODO: consider multiple usages of `SeenCache<T, N>`; would overwrite "cache.bin".
+    pub fn dump(&self) -> Result<()> {
+        let cache = Self::cache_path()
+            .ok_or_else(|| anyhow!("could not get cache path, skipping cache dump"))?;
+        let file_handle = File::create(cache)?;
+        let mut writer = BufWriter::new(file_handle);
+
+        let cfg = bincode::config::standard();
+        encode_into_std_write(self, &mut writer, cfg)?;
+
+        Ok(())
+    }
+}
+
 impl<T, const CACHE_SIZE: usize> Default for SeenCache<T, CACHE_SIZE>
 where
     T: Eq + Hash + Clone,
@@ -84,7 +134,7 @@ where
     T: Eq + Hash + Clone,
 {
     fn from(value: &[T]) -> Self {
-        let mut cache = Self::new();
+        let mut cache = Self::default();
 
         value.iter().cloned().for_each(|item| {
             cache.insert(item);
@@ -151,7 +201,7 @@ mod cache_test {
 
     #[test]
     fn insert() {
-        let mut cache: SeenCache<usize, 3> = SeenCache::new();
+        let mut cache: SeenCache<usize, 3> = SeenCache::default();
         assert_eq!(cache.len(), 0);
 
         cache.insert(4);

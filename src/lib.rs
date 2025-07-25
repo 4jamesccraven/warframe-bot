@@ -1,19 +1,22 @@
+mod blacklist;
 mod cache;
 pub mod cli;
 pub mod handler;
 mod wrappers;
 
+pub use blacklist::BLACKLIST;
 #[allow(unused)]
 pub use wrappers::*;
 
 use cli::Cli;
 
 use std::env;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 
 /// Initialise the Discord bot client.
-pub async fn init_bot(args: &Cli) -> Result<serenity::Client> {
+pub async fn init_bot(args: &Cli, handler: Arc<handler::Handler>) -> Result<serenity::Client> {
     use serenity::prelude::*;
     use serenity::Client;
     let intents = GatewayIntents::default()
@@ -23,7 +26,9 @@ pub async fn init_bot(args: &Cli) -> Result<serenity::Client> {
     // Take the API Token from the CLI if provided, else attempt to load it from the environment
     let api_token: String = args.api_token.clone().map_or_else(load_api_token, Ok)?;
 
-    let client = Client::builder(&api_token, intents).await?;
+    let client = Client::builder(&api_token, intents)
+        .event_handler_arc(handler)
+        .await?;
 
     Ok(client)
 }
