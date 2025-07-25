@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SeenCache<T, const CACHE_SIZE: usize>
 where
     T: Eq + Hash + Clone,
@@ -61,8 +61,8 @@ where
     pub fn difference(&mut self, values: &[T]) -> Vec<T> {
         values
             .iter()
+            .filter(|&value| self.insert(value.clone()))
             .cloned()
-            .filter(|value| self.insert(value.clone()))
             .collect()
     }
 }
@@ -135,7 +135,7 @@ mod cache_test {
         let cache: SeenCache<usize, 3> = SeenCache::from(&vec![1, 2, 3][..]);
 
         let cfg = bincode::config::standard();
-        let serialized = bincode::serde::encode_to_vec(&cache, cfg.clone()).unwrap();
+        let serialized = bincode::serde::encode_to_vec(&cache, cfg).unwrap();
         let deserialized = bincode::serde::decode_from_slice(&serialized, cfg).unwrap();
 
         assert_eq!(cache, deserialized.0);
