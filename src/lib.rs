@@ -3,6 +3,7 @@ mod cache;
 pub mod cli;
 pub mod handler;
 mod item_display;
+pub mod periodic;
 mod wrappers;
 
 pub use blacklist::BLACKLIST;
