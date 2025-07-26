@@ -49,14 +49,13 @@ impl Handler {
                 .collect(),
 
             Err(e) => {
-                eprintln!("[error fetching news]: {e}");
+                eprintln!("[Error -- fetching news]: {e}");
                 return;
             }
         };
 
         // Get a handle for the cache and the Discord connection.
         let mut cache = self.news_cache.lock().await;
-        let connection: Arc<Http> = self.connection().await;
 
         // Get the subset of news listings that have not been seen thus far.
         let news = cache.difference(&news);
@@ -64,26 +63,34 @@ impl Handler {
         // TODO: log if there aren't news items.
 
         // Send a message for each.
-        for news_item in news {
-            if let Ok(msg) = news_item.as_message() {
-                self.channel_id.say(&connection, msg).await.unwrap();
-            }
-        }
+        let messages = news
+            .into_iter()
+            .filter_map(|news_item| {
+                news_item
+                    .as_message()
+                    .inspect_err(|e| eprintln!("[Error -- Formatting news]: {e}"))
+                    .ok()
+            })
+            .collect::<Vec<_>>();
+        self.say_multiple(&messages).await;
 
         // Update the cache.
         match cache.dump() {
             Ok(unit) => unit,
-            Err(e) => eprintln!("[error dumping cache]: {e}"),
+            Err(e) => eprintln!("[Error -- dumping cache]: {e}"),
         }
     }
 
     /// Returns `true` if Baro Ki'Teer is active.
     pub async fn check_baro(&self) -> bool {
-        let trader = self
-            .worldstate
-            .fetch::<queryable::VoidTrader>()
-            .await
-            .unwrap();
+        let trader = match self.worldstate.fetch::<queryable::VoidTrader>().await {
+            Ok(trader) => trader,
+            Err(e) => {
+                eprint!("[Error -- fetching trader]: {e}");
+                return false;
+            }
+        };
+
         trader.active()
     }
 
@@ -91,20 +98,18 @@ impl Handler {
     /// current or next visit.
     pub async fn notify_baro(&self) {
         // Fetch the most recent information about Baro Ki'Teer.
-        let trader = self
-            .worldstate
-            .fetch::<queryable::VoidTrader>()
-            .await
-            .unwrap();
+        let trader = match self.worldstate.fetch::<queryable::VoidTrader>().await {
+            Ok(trader) => trader,
+            Err(e) => {
+                eprint!("[Error -- fetching trader]: {e}");
+                return;
+            }
+        };
 
         // Construct the messages, and prepare the connecion.
         let messages = calculate_baro_string(&trader).await;
-        let connection = self.connection().await;
 
-        // Post all the messages.
-        for msg in messages {
-            self.channel_id.say(&connection, msg).await.unwrap();
-        }
+        self.say_multiple(&messages).await;
     }
 
     /// Send a message displaying the bot's capabilities
@@ -114,10 +119,10 @@ impl Handler {
                             - !news: Show unseen news\n\
                             - !help: Print this message";
 
-        channel_id
-            .say(self.connection().await, help_message)
-            .await
-            .unwrap();
+        match channel_id.say(self.connection().await, help_message).await {
+            Ok(_) => {}
+            Err(e) => eprintln!("[Error -- sending message]: {e}"),
+        }
     }
 
     /// Get the cached connection.
@@ -126,7 +131,18 @@ impl Handler {
             .lock()
             .await
             .clone()
-            .expect("[Error - internal]: attempt to use event handler without connection.")
+            .expect("[Error -- internal]: attempt to use event handler without connection.")
+    }
+
+    /// Write multiple messages to the news channel.
+    async fn say_multiple(&self, contents: &[String]) {
+        let connection = self.connection().await;
+        for msg in contents.iter() {
+            match self.channel_id.say(&connection, msg).await {
+                Ok(_) => {}
+                Err(e) => eprintln!("[Error -- sending message]: {e}"),
+            }
+        }
     }
 }
 

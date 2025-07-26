@@ -1,6 +1,6 @@
 use std::{hash::Hash, ops::Deref};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize, Serializer};
 use warframe::worldstate::queryable;
 
@@ -9,7 +9,11 @@ pub struct News(#[serde(serialize_with = "serialize_news")] pub queryable::News)
 
 impl News {
     pub fn as_message(&self) -> Result<String> {
-        let end = self.as_string.split('[').next_back().unwrap();
+        let end = self
+            .as_string
+            .split('[')
+            .next_back()
+            .ok_or_else(|| anyhow!("news item field `as_string` had unexpected format"))?;
         Ok(format!("[{}] [{}", crate::fmt_api_date(&self.date)?, end))
     }
 }

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::Ok;
 use clap::Parser;
 use wf_bot::{cli::Cli, handler, init_bot, periodic};
 
@@ -9,14 +8,26 @@ async fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
     // Get the channel id to be used as the news channel.
-    let channel_id = args
+    let channel_id = match args
         .channel_id
-        .map_or_else(wf_bot::load_channel_id, Ok)
-        .unwrap();
+        .map_or_else(wf_bot::load_channel_id, anyhow::Ok)
+    {
+        Ok(channel_id) => channel_id,
+        Err(e) => {
+            eprintln!("[Error -- loading channel_id]: {e}");
+            std::process::exit(1);
+        }
+    };
 
     // Create a new handler and client.
     let handler = Arc::new(handler::Handler::new(channel_id.into()));
-    let mut client = init_bot(&args, handler.clone()).await.unwrap();
+    let mut client = match init_bot(&args, handler.clone()).await {
+        Ok(client) => client,
+        Err(e) => {
+            eprintln!("[Error -- loading client]: {e}");
+            std::process::exit(1);
+        }
+    };
 
     // Provide the handler with a connection to the Discord client.
     handler.init_connection(client.http.clone()).await;
