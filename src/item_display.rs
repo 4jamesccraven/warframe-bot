@@ -27,7 +27,7 @@ pub async fn calculate_baro_string(trader: &VoidTrader) -> Vec<String> {
 
         // Create our output buffer, and start pushing our tables into it
         let mut msgs = vec![time_info];
-        for table in tables[0..max_tables].iter() {
+        for table in tables[0..tables.len().min(max_tables)].iter() {
             let msg = MessageBuilder::new()
                 // Sanitise our output and make it a codeblock.
                 // It would probably be fine not to sanitise it, but why not?
