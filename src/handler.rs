@@ -61,7 +61,7 @@ impl Handler {
         let news = cache.difference(&news);
 
         // If there's nothing to report, we log it and move on.
-        if news.len() == 0 {
+        if news.is_empty() {
             println!("[info]: no unseen news");
             return;
         }

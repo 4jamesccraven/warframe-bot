@@ -1,6 +1,6 @@
 use clap::Parser;
 
-/// A Discord bot that interacts with the warframestat API to send news to a give Discord channel.
+/// A Discord bot that interacts with the WarframeStatus API to send news to a give Discord channel.
 /// For help see https://github.com/4jamesccraven/warframe-bot
 #[derive(Debug, Clone, Parser)]
 pub struct Cli {

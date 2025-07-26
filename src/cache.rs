@@ -89,7 +89,7 @@ where
         let path = cache_dir()?.join("wf_bot");
         fs::create_dir_all(&path).ok()?;
 
-        Some(path.join(format!("cache_{}.bin", cache_name)))
+        Some(path.join(format!("cache_{cache_name}.bin")))
     }
 
     /// Attempt to load a binary dump of the cache from the default location.
