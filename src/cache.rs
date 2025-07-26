@@ -18,6 +18,7 @@ pub struct SeenCache<T, const CACHE_SIZE: usize>
 where
     T: Cacheable,
 {
+    cache_name: String,
     queue: VecDeque<T>,
     #[serde(skip)]
     set: HashSet<T>,
@@ -79,21 +80,21 @@ where
     T: Cacheable + DeserializeOwned + Serialize,
 {
     /// Load the cache from its default location, or provide an empty one.
-    pub fn new() -> Self {
-        Self::from_cache().unwrap_or(Self::default())
+    pub fn new(cache_name: &str) -> Self {
+        Self::from_cache(cache_name).unwrap_or(Self::default())
     }
 
     /// Get the path to the cache directory.
-    fn cache_path() -> Option<PathBuf> {
-        let path = cache_dir()?.join("warframe_bot");
+    fn cache_path(cache_name: &str) -> Option<PathBuf> {
+        let path = cache_dir()?.join("wf_bot");
         fs::create_dir_all(&path).ok()?;
 
-        Some(path.join("cache.bin"))
+        Some(path.join(format!("cache_{}.bin", cache_name)))
     }
 
     /// Attempt to load a binary dump of the cache from the default location.
-    fn from_cache() -> Option<Self> {
-        let cache = Self::cache_path()?;
+    fn from_cache(cache_name: &str) -> Option<Self> {
+        let cache = Self::cache_path(cache_name)?;
         let mut file_handle = File::open(cache).ok()?;
 
         let cfg = bincode::config::standard();
@@ -103,9 +104,8 @@ where
     }
 
     /// Dump the cache to the default location.
-    /// TODO: consider multiple usages of `SeenCache<T, N>`; would overwrite "cache.bin".
     pub fn dump(&self) -> Result<()> {
-        let cache = Self::cache_path()
+        let cache = Self::cache_path(&self.cache_name)
             .ok_or_else(|| anyhow!("could not get cache path, skipping cache dump"))?;
         let file_handle = File::create(cache)?;
         let mut writer = BufWriter::new(file_handle);
@@ -125,6 +125,7 @@ where
         Self {
             queue: VecDeque::with_capacity(CACHE_SIZE),
             set: HashSet::with_capacity(CACHE_SIZE),
+            cache_name: "DEFAULT".to_string(),
         }
     }
 }
@@ -163,14 +164,24 @@ where
     where
         D: serde::Deserializer<'de>,
     {
-        let queue = VecDeque::deserialize(deserializer)?;
-        let mut set = HashSet::with_capacity(queue.len());
+        #[derive(Deserialize)]
+        struct SeenCacheHelper<T> {
+            cache_name: String,
+            queue: VecDeque<T>,
+        }
 
-        queue.iter().for_each(|i: &T| {
+        let helper = SeenCacheHelper::deserialize(deserializer)?;
+        let mut set = HashSet::with_capacity(helper.queue.len());
+
+        helper.queue.iter().for_each(|i: &T| {
             set.insert(i.clone());
         });
 
-        Ok(SeenCache { queue, set })
+        Ok(SeenCache {
+            queue: helper.queue,
+            cache_name: helper.cache_name,
+            set,
+        })
     }
 }
 

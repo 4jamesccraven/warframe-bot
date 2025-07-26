@@ -24,7 +24,7 @@ impl Handler {
         Self {
             channel_id,
             connection: Arc::new(Mutex::new(None)),
-            news_cache: Arc::new(Mutex::new(SeenCache::new())),
+            news_cache: Arc::new(Mutex::new(SeenCache::new("NEWS"))),
             worldstate: Client::new(),
         }
     }
@@ -60,7 +60,11 @@ impl Handler {
         // Get the subset of news listings that have not been seen thus far.
         let news = cache.difference(&news);
 
-        // TODO: log if there aren't news items.
+        // If there's nothing to report, we log it and move on.
+        if news.len() == 0 {
+            println!("[info]: no unseen news");
+            return;
+        }
 
         // Send a message for each.
         let messages = news
