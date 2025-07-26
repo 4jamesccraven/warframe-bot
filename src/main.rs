@@ -7,20 +7,8 @@ use wf_bot::{cli::Cli, handler, init_bot, periodic};
 async fn main() -> anyhow::Result<()> {
     let args = Cli::parse();
 
-    // Get the channel id to be used as the news channel.
-    let channel_id = match args
-        .channel_id
-        .map_or_else(wf_bot::load_channel_id, anyhow::Ok)
-    {
-        Ok(channel_id) => channel_id,
-        Err(e) => {
-            eprintln!("[Error -- loading channel_id]: {e}");
-            std::process::exit(1);
-        }
-    };
-
     // Create a new handler and client.
-    let handler = Arc::new(handler::Handler::new(channel_id.into()));
+    let handler = Arc::new(handler::Handler::new(args.channel_id.into()));
     let mut client = match init_bot(&args, handler.clone()).await {
         Ok(client) => client,
         Err(e) => {

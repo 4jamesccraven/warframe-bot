@@ -3,12 +3,12 @@ mod cache;
 pub mod cli;
 pub mod handler;
 mod item_display;
+mod news_wrapper;
 pub mod periodic;
-mod wrappers;
 
 pub use blacklist::BLACKLIST;
 #[allow(unused)]
-pub use wrappers::*;
+pub use news_wrapper::*;
 
 use cli::Cli;
 
@@ -25,22 +25,11 @@ pub async fn init_bot(args: &Cli, handler: Arc<handler::Handler>) -> Result<sere
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    // Take the API Token from the CLI if provided, else attempt to load it from the environment
-    let api_token: String = args.api_token.clone().map_or_else(load_api_token, Ok)?;
-
-    let client = Client::builder(&api_token, intents)
+    let client = Client::builder(&args.api_token, intents)
         .event_handler_arc(handler)
         .await?;
 
     Ok(client)
-}
-
-/// Load the Discord API token from an environment variable.
-fn load_api_token() -> Result<String> {
-    const ERR_MESG: &str = "A valid discord API token is required to run wf-bot.";
-    let api_token = env::var("WF_DISCORDTOKEN").context(ERR_MESG)?;
-
-    Ok(api_token)
 }
 
 /// Load the Discord Channel ID from an environment variable.
