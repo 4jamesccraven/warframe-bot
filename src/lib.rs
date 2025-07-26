@@ -2,6 +2,7 @@ mod blacklist;
 mod cache;
 pub mod cli;
 pub mod handler;
+mod item_display;
 mod wrappers;
 
 pub use blacklist::BLACKLIST;

@@ -51,7 +51,7 @@ where
     }
 
     #[allow(unused)]
-    /// Returns the length of the cache
+    /// Returns the length of the cache.
     pub fn len(&self) -> usize {
         self.queue.len()
     }
