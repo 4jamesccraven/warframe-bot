@@ -1,4 +1,4 @@
-{lib, pkgs}:
+{ lib, pkgs }:
 
 with pkgs;
 rustPlatform.buildRustPackage {
@@ -16,8 +16,12 @@ rustPlatform.buildRustPackage {
 
   cargoLock.lockFile = ./Cargo.lock;
 
+  checkFlags = [
+    # Test is impure, requires network usage
+    "--skip=news_wrapper::news_wrapper_test::serialize_is_deserialize"
+  ];
+
   meta = {
     license = lib.licenses.gpl3;
   };
 }
-
