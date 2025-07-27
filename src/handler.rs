@@ -1,6 +1,7 @@
+use crate::News;
 use crate::cache::SeenCache;
 use crate::item_display::calculate_baro_string;
-use crate::News;
+use crate::{error, info, warning};
 
 use std::sync::Arc;
 
@@ -9,7 +10,7 @@ use serenity::async_trait;
 use serenity::prelude::*;
 use tokio::sync::Mutex;
 use warframe::worldstate::client::Client;
-use warframe::worldstate::{queryable, TimedEvent};
+use warframe::worldstate::{TimedEvent, queryable};
 
 #[derive(Debug, Clone)]
 pub struct Handler {
@@ -49,7 +50,7 @@ impl Handler {
                 .collect(),
 
             Err(e) => {
-                eprintln!("[Error -- fetching news]: {e}");
+                warning!(context = "fetching news", "{e}");
                 return;
             }
         };
@@ -62,7 +63,7 @@ impl Handler {
 
         // If there's nothing to report, we log it and move on.
         if news.is_empty() {
-            println!("[info]: no unseen news");
+            info!("no unseen news");
             return;
         }
 
@@ -72,16 +73,15 @@ impl Handler {
             .filter_map(|news_item| {
                 news_item
                     .as_message()
-                    .inspect_err(|e| eprintln!("[Error -- Formatting news]: {e}"))
+                    .inspect_err(|e| warning!(context = "formatting news", "{e}"))
                     .ok()
             })
             .collect::<Vec<_>>();
         self.say_multiple(&messages).await;
 
         // Update the cache.
-        match cache.dump() {
-            Ok(unit) => unit,
-            Err(e) => eprintln!("[Error -- dumping cache]: {e}"),
+        if let Err(e) = cache.dump() {
+            warning!(context = "dumping cache", "{e}");
         }
     }
 
@@ -90,7 +90,7 @@ impl Handler {
         let trader = match self.worldstate.fetch::<queryable::VoidTrader>().await {
             Ok(trader) => trader,
             Err(e) => {
-                eprint!("[Error -- fetching trader]: {e}");
+                warning!(context = "fetching trader", "{e}");
                 return false;
             }
         };
@@ -105,7 +105,7 @@ impl Handler {
         let trader = match self.worldstate.fetch::<queryable::VoidTrader>().await {
             Ok(trader) => trader,
             Err(e) => {
-                eprint!("[Error -- fetching trader]: {e}");
+                warning!(context = "fetching trader", "{e}");
                 return;
             }
         };
@@ -123,28 +123,31 @@ impl Handler {
                             - !news: Show unseen news\n\
                             - !help: Print this message";
 
-        match channel_id.say(self.connection().await, help_message).await {
-            Ok(_) => {}
-            Err(e) => eprintln!("[Error -- sending message]: {e}"),
+        if let Err(e) = channel_id.say(self.connection().await, help_message).await {
+            warning!(context = "sending message", "{e}");
         }
     }
 
     /// Get the cached connection.
     async fn connection(&self) -> Arc<Http> {
-        self.connection
-            .lock()
-            .await
-            .clone()
-            .expect("[Error -- internal]: attempt to use event handler without connection.")
+        match self.connection.lock().await.clone() {
+            Some(connection) => connection,
+            None => {
+                error!(
+                    context = "internal",
+                    "attempt to use handler without connection"
+                );
+                std::process::exit(1);
+            }
+        }
     }
 
     /// Write multiple messages to the news channel.
     async fn say_multiple(&self, contents: &[String]) {
         let connection = self.connection().await;
         for msg in contents.iter() {
-            match self.channel_id.say(&connection, msg).await {
-                Ok(_) => {}
-                Err(e) => eprintln!("[Error -- sending message]: {e}"),
+            if let Err(e) = self.channel_id.say(&connection, msg).await {
+                warning!(context = "sending message", "{e}");
             }
         }
     }

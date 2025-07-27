@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use clap::Parser;
-use wf_bot::{cli::Cli, handler, init_bot, periodic};
+use wf_bot::{cli::Cli, error, handler, init_bot, periodic};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -12,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
     let mut client = match init_bot(&args, handler.clone()).await {
         Ok(client) => client,
         Err(e) => {
-            eprintln!("[Error -- loading client]: {e}");
+            error!(context = "loading client", "{e}");
             std::process::exit(1);
         }
     };

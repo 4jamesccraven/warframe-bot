@@ -3,6 +3,7 @@ mod cache;
 pub mod cli;
 pub mod handler;
 mod item_display;
+pub mod logging;
 mod news_wrapper;
 pub mod periodic;
 
@@ -19,8 +20,8 @@ use anyhow::{Context, Result};
 
 /// Initialise the Discord bot client.
 pub async fn init_bot(args: &Cli, handler: Arc<handler::Handler>) -> Result<serenity::Client> {
-    use serenity::prelude::*;
     use serenity::Client;
+    use serenity::prelude::*;
     let intents = GatewayIntents::default()
         | GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
