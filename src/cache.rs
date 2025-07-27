@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use bincode::serde::{decode_from_std_read, encode_into_std_write};
 use dirs::cache_dir;
 use serde::de::DeserializeOwned;
@@ -18,7 +18,7 @@ pub struct SeenCache<T, const CACHE_SIZE: usize>
 where
     T: Cacheable,
 {
-    cache_name: String,
+    pub cache_name: String,
     queue: VecDeque<T>,
     #[serde(skip)]
     set: HashSet<T>,
@@ -86,10 +86,24 @@ where
 
     /// Get the path to the cache directory.
     fn cache_path(cache_name: &str) -> Option<PathBuf> {
+        // Construct the path to the cache directory, ensuring its existence.
         let path = cache_dir()?.join("wf_bot");
         fs::create_dir_all(&path).ok()?;
 
-        Some(path.join(format!("cache_{cache_name}.bin")))
+        // Construct the path to the cache file, ensuring its existence as well.
+        let full_path = path.join(format!("cache_{cache_name}.bin"));
+        if !full_path.is_file() {
+            let mut empty = Self::default();
+            empty.cache_name = cache_name.to_string();
+
+            let file_handle = File::create(&full_path).ok()?;
+            let mut writer = BufWriter::new(file_handle);
+
+            let cfg = bincode::config::standard();
+            encode_into_std_write(empty, &mut writer, cfg).ok()?;
+        }
+
+        Some(full_path)
     }
 
     /// Attempt to load a binary dump of the cache from the default location.
