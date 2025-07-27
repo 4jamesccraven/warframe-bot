@@ -7,7 +7,12 @@
   };
 
   outputs =
-    { flake-utils, nixpkgs, ... }:
+    {
+      self,
+      flake-utils,
+      nixpkgs,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -31,5 +36,8 @@
 
         packages.default = pkgs.callPackage ./package.nix { };
       }
-    );
+    )
+    // flake-utils.lib.eachDefaultSystemPassThrough (system: {
+      nixosModules.default = import ./nixos.nix { wf-bot = self.package.${system}.default; };
+    });
 }
