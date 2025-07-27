@@ -38,6 +38,6 @@
       }
     )
     // flake-utils.lib.eachDefaultSystemPassThrough (system: {
-      nixosModules.default = import ./nixos.nix { wf-bot = self.package.${system}.default; };
+      nixosModules.default = import ./nixos.nix { wf-bot = self.packages.${system}.default; };
     });
 }

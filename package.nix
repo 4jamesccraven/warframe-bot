@@ -3,7 +3,7 @@
 with pkgs;
 rustPlatform.buildRustPackage {
   pname = "wf-bot";
-  version = "0.1.0";
+  version = "0.2.0";
 
   nativeBuildInputs = with pkgs; [
     openssl.dev
