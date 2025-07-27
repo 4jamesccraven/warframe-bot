@@ -1,9 +1,9 @@
-{lib, pkgs}:
+{ lib, pkgs }:
 
 with pkgs;
 rustPlatform.buildRustPackage {
   pname = "wf-bot";
-  version = "0.1.0";
+  version = "0.2.0";
 
   nativeBuildInputs = with pkgs; [
     openssl.dev
@@ -16,8 +16,12 @@ rustPlatform.buildRustPackage {
 
   cargoLock.lockFile = ./Cargo.lock;
 
+  checkFlags = [
+    # Test is impure, requires network usage
+    "--skip=news_wrapper::news_wrapper_test::serialize_is_deserialize"
+  ];
+
   meta = {
     license = lib.licenses.gpl3;
   };
 }
-

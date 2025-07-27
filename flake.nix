@@ -2,12 +2,17 @@
   description = "Warframe discord bot";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=24.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { flake-utils, nixpkgs, ... }:
+    {
+      self,
+      flake-utils,
+      nixpkgs,
+      ...
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
@@ -15,26 +20,24 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          buildInputs = (with pkgs; [
+          buildInputs = with pkgs; [
             cargo
+            clippy
             rustc
             rustfmt
             libgcc
 
             pkg-config
             openssl
-
-            # For quick api testing
-            python312
-          ]) ++ (with pkgs.python312Packages; [
-            requests
-            rich
-          ]);
+          ];
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
         };
 
         packages.default = pkgs.callPackage ./package.nix { };
       }
-    );
+    )
+    // flake-utils.lib.eachDefaultSystemPassThrough (system: {
+      nixosModules.default = import ./nixos.nix { wf-bot = self.packages.${system}.default; };
+    });
 }
