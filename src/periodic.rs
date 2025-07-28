@@ -3,7 +3,7 @@ use crate::handler::Handler;
 use std::sync::Arc;
 
 use chrono::{DateTime, Datelike, Local, Timelike};
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 /// Spawn the periodic tasks that the bot does.
 pub async fn start_tasks(handler: Arc<Handler>) {
@@ -25,7 +25,9 @@ pub async fn start_tasks(handler: Arc<Handler>) {
     task(
         |now| {
             let now_utc = now.with_timezone(&chrono::Utc);
-            now_utc.weekday() == chrono::Weekday::Fri && now_utc.hour() == 14
+            now_utc.weekday() == chrono::Weekday::Fri
+                && now_utc.hour() == 14
+                && now_utc.minute() == 0
         },
         move || {
             let handler = handler_clone.clone();
