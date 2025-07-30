@@ -22,6 +22,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cargo
+            cargo-expand
             clippy
             rustc
             rustfmt

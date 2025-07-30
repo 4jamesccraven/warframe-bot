@@ -5,9 +5,7 @@ use crate::{error, info, warning};
 
 use std::sync::Arc;
 
-use serenity::all::{ChannelId, Http, Message};
-use serenity::async_trait;
-use serenity::prelude::*;
+use poise::serenity_prelude::{ChannelId, Http};
 use tokio::sync::Mutex;
 use warframe::worldstate::client::Client;
 use warframe::worldstate::{TimedEvent, queryable};
@@ -36,7 +34,7 @@ impl Handler {
     }
 
     /// Send a message to the news channel with currently unseen news items.
-    pub async fn notify_news(&self) {
+    pub async fn notify_news(&self) -> bool {
         // Fetch the recent news, and map it into the correct type
         let news: Vec<News> = match self.worldstate.fetch::<queryable::News>().await {
             Ok(response) => response
@@ -51,7 +49,7 @@ impl Handler {
 
             Err(e) => {
                 warning!(context = "fetching news", "{e}");
-                return;
+                return true;
             }
         };
 
@@ -64,7 +62,7 @@ impl Handler {
         // If there's nothing to report, we log it and move on.
         if news.is_empty() {
             info!("no unseen news");
-            return;
+            return false;
         }
 
         // Send a message for each.
@@ -83,6 +81,7 @@ impl Handler {
         if let Err(e) = cache.dump() {
             warning!(context = "dumping cache", "{e}");
         }
+        true
     }
 
     /// Returns `true` if Baro Ki'Teer is active.
@@ -116,18 +115,6 @@ impl Handler {
         self.say_multiple(&messages).await;
     }
 
-    /// Send a message displaying the bot's capabilities
-    async fn show_help(&self, channel_id: &ChannelId) {
-        let help_message = "Available Commands:\n\
-                            - !baro: Show when baro will be here next, or his inventory if he's here\n\
-                            - !news: Show unseen news\n\
-                            - !help: Print this message";
-
-        if let Err(e) = channel_id.say(self.connection().await, help_message).await {
-            warning!(context = "sending message", "{e}");
-        }
-    }
-
     /// Get the cached connection.
     async fn connection(&self) -> Arc<Http> {
         match self.connection.lock().await.clone() {
@@ -149,20 +136,6 @@ impl Handler {
             if let Err(e) = self.channel_id.say(&connection, msg).await {
                 warning!(context = "sending message", "{e}");
             }
-        }
-    }
-}
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn message(&self, _ctx: Context, msg: Message) {
-        let content = msg.content;
-
-        match content.as_str() {
-            "!baro" => self.notify_baro().await,
-            "!help" => self.show_help(&msg.channel_id).await,
-            "!news" => self.notify_news().await,
-            _ => {}
         }
     }
 }
