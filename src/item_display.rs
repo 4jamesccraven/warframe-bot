@@ -4,6 +4,8 @@ use warframe::worldstate::items::Item;
 use warframe::worldstate::queryable::VoidTrader;
 use warframe::worldstate::{TimedEvent, VoidTraderInventoryItem};
 
+use crate::circuit::{circuit, sp_circuit};
+
 pub async fn calculate_baro_string(trader: &VoidTrader) -> Vec<String> {
     let max_tables = 2;
     if trader.active() {
@@ -15,7 +17,7 @@ pub async fn calculate_baro_string(trader: &VoidTrader) -> Vec<String> {
         );
 
         // Calculate the tables...
-        let tables = format_tables(&trader.inventory).await;
+        let tables = format_baro_inventory(&trader.inventory).await;
 
         // ...warning about truncation if necessary
         if tables.len() > max_tables {
@@ -51,7 +53,7 @@ pub async fn calculate_baro_string(trader: &VoidTrader) -> Vec<String> {
 }
 
 /// Sorts and formats the the Void Trader's inventory for display.
-async fn format_tables(items: &[VoidTraderInventoryItem]) -> Vec<String> {
+async fn format_baro_inventory(items: &[VoidTraderInventoryItem]) -> Vec<String> {
     // Sort the items and format them as strings for displaying
     let data = items
         .iter()
@@ -89,6 +91,57 @@ async fn format_tables(items: &[VoidTraderInventoryItem]) -> Vec<String> {
             table.format(d_i)
         })
         .collect::<Vec<_>>()
+}
+
+pub fn format_archon(boss: &str) -> String {
+    match boss.to_lowercase() {
+        s if s.contains("amar") => "Crimson Archon Shard".to_string(),
+        s if s.contains("nira") => "Amber Archon Shard".to_string(),
+        s if s.contains("boreal") => "Azure Archon Shard".to_string(),
+        s => format!("Unknown Archon Boss: {s}"),
+    }
+}
+
+pub struct WeeklyInfo {
+    pub archon_shard: String,
+    pub normal_circuit: [&'static str; 3],
+    pub sp_circuit: [&'static str; 5],
+}
+
+impl WeeklyInfo {
+    pub fn new(boss: &str) -> Self {
+        Self {
+            archon_shard: format_archon(boss),
+            normal_circuit: circuit(),
+            sp_circuit: sp_circuit(),
+        }
+    }
+
+    pub fn as_message(&self) -> String {
+        use ascii_table::{Align::*, AsciiTable};
+        let mut table = AsciiTable::default();
+        table.column(0).set_header("The Circit").set_align(Center);
+        #[rustfmt::skip]
+        table.column(1).set_header("The Circit (Steel Path)").set_align(Center);
+        table.column(2).set_header("Archon Hunt").set_align(Left);
+
+        let circ = self.normal_circuit;
+        let spc = self.sp_circuit;
+
+        let data = vec![
+            vec![circ[0], spc[0], &self.archon_shard],
+            vec![circ[1], spc[1]],
+            vec![circ[2], spc[2]],
+            vec!["", spc[3]],
+            vec!["", spc[4]],
+        ];
+
+        let table = table.format(data);
+
+        MessageBuilder::new()
+            .push_codeblock_safe(table, None)
+            .build()
+    }
 }
 
 /// Formats large numbers using k (thousands) and M (millions) where appropriate.

@@ -1,5 +1,6 @@
 mod blacklist;
 mod cache;
+mod circuit;
 pub mod cli;
 pub mod commands;
 pub mod handler;

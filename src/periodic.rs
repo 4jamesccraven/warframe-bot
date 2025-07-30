@@ -42,6 +42,24 @@ pub async fn start_tasks(handler: Arc<Handler>) {
         },
     )
     .await;
+
+    // Send an update about Weekly offerings every Monday at 0:00 UTC.
+    let handler_clone = handler.clone();
+    task(
+        |now| {
+            let now_utc = now.with_timezone(&chrono::Utc);
+            now_utc.weekday() == chrono::Weekday::Mon
+                && now_utc.hour() == 0
+                && now_utc.minute() == 0
+        },
+        move || {
+            let handler = handler_clone.clone();
+            async move {
+                handler.notify_weekly().await;
+            }
+        },
+    )
+    .await;
 }
 
 /// Checks every minute whether a task should be run if a time-based condition is met.
