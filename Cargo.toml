@@ -17,4 +17,8 @@ once_cell = "1.21.3"
 poise = "0.6.1"
 serde = { version = "1.0.219", features = ["derive"] }
 tokio = "1.46.1"
-warframe = "7.0.1"
+warframe = "7.0
+
+[profile.release]
+codegen-units = 1
+lto = true.1"

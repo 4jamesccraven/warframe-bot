@@ -7,7 +7,7 @@ use wf_bot::{cli::Cli, commands::*, handler, periodic, warning};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv::dotenv()?;
+    let _ = dotenv::dotenv();
     let args = Cli::parse();
 
     // Create a new handler and client.
