@@ -8,7 +8,12 @@ pub struct Cli {
     #[arg(long, env = "WF_DISCORDTOKEN")]
     pub api_token: String,
 
-    /// A valid ID for a discord channel for which the given bot has permissions.
+    /// A valid ID for a Discord channel for which the given bot has permissions.
     #[arg(long, env = "WF_CHANNELID")]
     pub channel_id: u64,
+
+    /// A valid ID for a Discord server that should be used to register the slash commands. Global
+    /// assumed if no id is provided.
+    #[arg(long, env = "WF_GUILDID")]
+    pub guild_id: Option<u64>,
 }

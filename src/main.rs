@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use clap::Parser;
 use poise::serenity_prelude as serenity;
-use wf_bot::{cli::Cli, commands::*, handler, periodic};
+use wf_bot::{cli::Cli, commands::*, handler, periodic, warning};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -23,12 +23,26 @@ async fn main() -> anyhow::Result<()> {
                 handler.init_connection(ctx.http.clone()).await;
                 periodic::start_tasks(handler.clone()).await;
 
-                poise::builtins::register_in_guild(
-                    ctx,
-                    &framework.options().commands,
-                    poise::serenity_prelude::GuildId::from(470047704098013184),
-                )
-                .await?;
+                match args.guild_id {
+                    Some(id) => {
+                        poise::builtins::register_in_guild(
+                            ctx,
+                            &framework.options().commands,
+                            id.into(),
+                        )
+                        .await?;
+                    }
+                    None => {
+                        poise::builtins::register_globally(ctx, &framework.options().commands)
+                            .await?;
+
+                        warning!(
+                            context = "initialisation",
+                            "registering slash commands globally. this may take up to an hour."
+                        );
+                    }
+                }
+
                 Ok(handler.as_ref().clone())
             })
         })
