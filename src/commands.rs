@@ -1,4 +1,5 @@
 use crate::handler::Handler;
+use crate::warning;
 
 use anyhow::{Error, Result};
 use poise::command;
@@ -9,22 +10,35 @@ type Context<'a> = poise::Context<'a, Handler, Error>;
 #[command(slash_command, guild_cooldown = 360)]
 pub async fn baro(ctx: Context<'_>) -> Result<()> {
     let handler = ctx.data();
-    handler.notify_baro().await;
-    ctx.say("Update sent to news channel.").await?;
+    let messages = handler.baro_messages().await;
+
+    if messages.is_empty() {
+        ctx.say("Internal error, try again soon").await?;
+    }
+    for msg in messages.into_iter() {
+        if let Err(e) = ctx.say(msg).await {
+            warning!(context = "sending message", "{e}");
+        }
+    }
+
     Ok(())
 }
 
 /// Show unseen news
-#[command(slash_command)]
+#[command(slash_command, guild_cooldown = 360)]
 pub async fn news(ctx: Context<'_>) -> Result<()> {
     let handler = ctx.data();
-    let something_sent = handler.notify_news().await;
-    let message = if something_sent {
-        "Update sent to news channel."
-    } else {
-        "No news to show."
-    };
-    ctx.say(message).await?;
+    let messages = handler.news_messages().await;
+
+    if messages.is_empty() {
+        ctx.say("No news to show.").await?;
+    }
+    for msg in messages.into_iter() {
+        if let Err(e) = ctx.say(msg).await {
+            warning!(context = "sending message", "{e}");
+        }
+    }
+
     Ok(())
 }
 
@@ -32,9 +46,9 @@ pub async fn news(ctx: Context<'_>) -> Result<()> {
 #[command(slash_command)]
 pub async fn help(ctx: Context<'_>) -> Result<()> {
     let help_message = "Available Commands:\n\
-                        - !baro: Show when baro will be here next, or his inventory if he's here\n\
-                        - !news: Show unseen news\n\
-                        - !help: Print this message";
+                        - `/baro`: Show when baro will be here next, or his inventory if he's here\n\
+                        - `/news`: Show unseen news\n\
+                        - `/help`: Print this message";
     ctx.say(help_message).await?;
     Ok(())
 }
