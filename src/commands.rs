@@ -13,7 +13,7 @@ pub async fn baro(ctx: Context<'_>) -> Result<()> {
     let messages = handler.baro_messages().await;
 
     if messages.is_empty() {
-        ctx.say("Internal error, try again soon").await?;
+        ctx.say("Internal error, try again soon.").await?;
     }
     for msg in messages.into_iter() {
         if let Err(e) = ctx.say(msg).await {
@@ -42,13 +42,30 @@ pub async fn news(ctx: Context<'_>) -> Result<()> {
     Ok(())
 }
 
+/// Show what's in The Circuit, and what Archon Shard is available from this week's Archon Hunt.
+#[command(slash_command, guild_cooldown = 360)]
+pub async fn weekly(ctx: Context<'_>) -> Result<()> {
+    let handler = ctx.data();
+    let message = handler
+        .weekly_messages()
+        .await
+        .unwrap_or("Internal error, try again soon.".into());
+
+    if let Err(e) = ctx.say(&message).await {
+        warning!(context = "sending message", "{e}");
+    }
+
+    Ok(())
+}
+
 /// Print a help message
 #[command(slash_command)]
 pub async fn help(ctx: Context<'_>) -> Result<()> {
     let help_message = "Available Commands:\n\
-                        - `/baro`: Show when baro will be here next, or his inventory if he's here\n\
-                        - `/news`: Show unseen news\n\
-                        - `/help`: Print this message";
+                        - `/baro`  : Show when baro will be here next, or his inventory if he's here\n\
+                        - `/news`  : Show unseen news\n\
+                        - `/help`  : Print this message\n\
+                        - `/weekly`: Show what's in The Circuit and what Archon Hunt is available";
     ctx.say(help_message).await?;
     Ok(())
 }

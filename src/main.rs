@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     let handler = Arc::new(handler::Handler::new(args.channel_id.into()));
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![baro(), news(), help()],
+            commands: vec![baro(), news(), weekly(), help()],
             ..Default::default()
         })
         .setup(move |ctx, _ready, framework| {

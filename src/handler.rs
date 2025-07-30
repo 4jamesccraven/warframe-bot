@@ -1,6 +1,6 @@
 use crate::News;
 use crate::cache::SeenCache;
-use crate::item_display::calculate_baro_string;
+use crate::item_display::{WeeklyInfo, calculate_baro_string};
 use crate::{error, info, warning};
 
 use std::sync::Arc;
@@ -126,6 +126,31 @@ impl Handler {
         let messages = self.baro_messages().await;
 
         self.say_multiple(&messages).await;
+    }
+
+    /// Create the weekly reset message.
+    pub async fn weekly_messages(&self) -> Option<String> {
+        let archon_boss = self
+            .worldstate
+            .fetch::<queryable::ArchonHunt>()
+            .await
+            .inspect_err(|e| warning!(context = "fetching archon", "{e}"))
+            .ok()?
+            .boss;
+
+        let info = WeeklyInfo::new(&archon_boss);
+
+        Some(info.as_message())
+    }
+
+    /// Send a message summarising the weekly reset to the news channel.
+    pub async fn notify_weekly(&self) {
+        let message = match self.weekly_messages().await {
+            Some(m) => m,
+            None => return,
+        };
+
+        self.say_multiple(&[message]).await;
     }
 
     /// Get the cached connection.
