@@ -49,7 +49,7 @@ pub async fn start_tasks(handler: Arc<Handler>) {
         |now| {
             let now_utc = now.with_timezone(&chrono::Utc);
             now_utc.weekday() == chrono::Weekday::Mon
-                && now_utc.hour() == 0
+                && now_utc.hour() == 1
                 && now_utc.minute() == 0
         },
         move || {

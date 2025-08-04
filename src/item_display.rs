@@ -93,6 +93,7 @@ async fn format_baro_inventory(items: &[VoidTraderInventoryItem]) -> Vec<String>
         .collect::<Vec<_>>()
 }
 
+/// Generate the name of the archon shard from the boss's name.
 pub fn format_archon(boss: &str) -> String {
     match boss.to_lowercase() {
         s if s.contains("amar") => "Crimson Archon Shard".to_string(),
@@ -117,13 +118,14 @@ impl WeeklyInfo {
         }
     }
 
+    /// Convert the weekly info struct into a Discord message.
     pub fn as_message(&self) -> String {
         use ascii_table::{Align::*, AsciiTable};
         let mut table = AsciiTable::default();
         table.column(0).set_header("The Circit").set_align(Center);
         #[rustfmt::skip]
         table.column(1).set_header("The Circit (Steel Path)").set_align(Center);
-        table.column(2).set_header("Archon Hunt").set_align(Left);
+        table.column(2).set_header("Archon Hunt").set_align(Center);
 
         let circ = self.normal_circuit;
         let spc = self.sp_circuit;
@@ -138,8 +140,15 @@ impl WeeklyInfo {
 
         let table = table.format(data);
 
+        let line_length = table
+            .lines()
+            .map(|line| line.chars().count())
+            .max()
+            .unwrap_or(0);
+        let title = format!("{:^width$}", "Weekly Info", width = line_length);
+
         MessageBuilder::new()
-            .push_codeblock_safe(table, None)
+            .push_codeblock_safe(format!("{}\n{}", title, table), None)
             .build()
     }
 }
