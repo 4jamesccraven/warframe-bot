@@ -59,7 +59,7 @@ pub async fn weekly(ctx: Context<'_>) -> Result<()> {
 }
 
 /// Print a help message
-#[command(slash_command)]
+#[command(slash_command, guild_cooldown = 360)]
 pub async fn help(ctx: Context<'_>) -> Result<()> {
     let help_message = "Available Commands:\n\
                         - `/baro`  : Show when baro will be here next, or his inventory if he's here\n\
