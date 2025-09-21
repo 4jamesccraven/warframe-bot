@@ -1,25 +1,21 @@
 { lib, pkgs }:
 
 with pkgs;
+let
+  manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+in
 rustPlatform.buildRustPackage {
-  pname = "wf-bot";
-  version = "0.2.0";
+  pname = manifest.name;
+  version = manifest.version;
+
+  src = ./.;
+  cargoLock.lockFile = ./Cargo.lock;
 
   nativeBuildInputs = with pkgs; [
     openssl.dev
     pkg-config
   ];
-
   PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-
-  src = ./.;
-
-  cargoLock.lockFile = ./Cargo.lock;
-
-  checkFlags = [
-    # Test is impure, requires network usage
-    "--skip=news_wrapper::news_wrapper_test::serialize_is_deserialize"
-  ];
 
   meta = {
     license = lib.licenses.gpl3;

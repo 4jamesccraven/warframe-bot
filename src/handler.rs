@@ -180,5 +180,5 @@ impl Handler {
 
 /// Returns `true` if the news_listing is blacklisted from being cached or sent to the channel.
 fn white_listed(news_item: &News) -> bool {
-    !crate::BLACKLIST.contains(news_item)
+    !crate::BLACKLIST.contains(&news_item.id)
 }
