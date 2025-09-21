@@ -24,7 +24,7 @@ impl Handler {
             channel_id,
             connection: Arc::new(Mutex::new(None)),
             news_cache: Arc::new(Mutex::new(SeenCache::new("NEWS"))),
-            worldstate: Client::new(),
+            worldstate: Client::default(),
         }
     }
 

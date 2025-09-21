@@ -1,6 +1,6 @@
 use std::{hash::Hash, ops::Deref};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize, Serializer};
 use warframe::worldstate::queryable;
 
@@ -9,12 +9,12 @@ pub struct News(#[serde(serialize_with = "serialize_news")] pub queryable::News)
 
 impl News {
     pub fn as_message(&self) -> Result<String> {
-        let end = self
-            .as_string
-            .split('[')
-            .next_back()
-            .ok_or_else(|| anyhow!("news item field `as_string` had unexpected format"))?;
-        Ok(format!("[{}] [{}", crate::fmt_api_date(&self.date)?, end))
+        Ok(format!(
+            "[{}] [{}]({})",
+            crate::fmt_api_date(&self.date)?,
+            self.message,
+            self.image_link,
+        ))
     }
 }
 
@@ -60,7 +60,6 @@ where
     state.serialize_field("priority", &news.priority)?;
     state.serialize_field("update", &news.update)?;
     state.serialize_field("stream", &news.stream)?;
-    state.serialize_field("as_string", &news.as_string)?;
     state.serialize_field("date", &news.date)?;
     state.serialize_field("start_date", &news.start_date)?;
     state.serialize_field("end_date", &news.end_date)?;
@@ -75,11 +74,11 @@ mod news_wrapper_test {
     #[tokio::test]
     async fn serialize_is_deserialize() {
         use bincode::serde::{decode_from_slice, encode_to_vec};
-        use warframe::worldstate::{queryable, Client};
+        use warframe::worldstate::{Client, queryable};
 
         let cfg = bincode::config::standard();
 
-        let most_recent_news = Client::new()
+        let most_recent_news = Client::default()
             .fetch::<queryable::News>()
             .await
             .unwrap()
